@@ -5,7 +5,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.newsapp.Presentation.FavoritesScreen
 import com.example.newsapp.Presentation.RegisterScreen
 import com.example.newsapp.Presentation.MainScreen
-import com.example.newsapp.WebViewScreen
+import com.example.newsapp.utils.WebViewScreen
 
 @Composable
 fun AppNavigation(startDestination: String) {

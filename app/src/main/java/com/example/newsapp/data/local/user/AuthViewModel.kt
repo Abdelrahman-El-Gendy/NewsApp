@@ -1,8 +1,9 @@
+package com.example.newsapp.data.local.user
+
+import UserPreferences
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.newsapp.data.local.user.AppDataBase
-import com.example.newsapp.data.local.user.User
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch

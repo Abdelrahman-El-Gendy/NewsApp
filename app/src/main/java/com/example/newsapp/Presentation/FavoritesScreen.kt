@@ -14,7 +14,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.newsapp.TopicNewsCard
+import com.example.newsapp.utils.TopicNewsCard
 import com.example.newsapp.data.local.news.FavoriteArticleEntity
 import com.example.newsapp.data.local.news.FavouriteViewModel
 import com.example.newsapp.data.remote.Article

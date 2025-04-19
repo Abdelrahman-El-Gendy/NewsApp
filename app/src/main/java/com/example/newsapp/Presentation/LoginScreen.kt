@@ -26,6 +26,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.newsapp.data.local.user.AuthViewModel
 
 @Composable
 fun LoginScreen(navController: NavController, viewModel: AuthViewModel = viewModel()) {

@@ -31,13 +31,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.newsapp.NewsViewModel
+import com.example.newsapp.Presentation.NewsViewModel
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import com.example.newsapp.BreakingNewsCard
-import com.example.newsapp.TopicNewsCard
-import com.example.newsapp.data.remote.Article
+import com.example.newsapp.utils.BreakingNewsCard
+import com.example.newsapp.utils.TopicNewsCard
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)

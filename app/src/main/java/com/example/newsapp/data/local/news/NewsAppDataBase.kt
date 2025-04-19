@@ -4,16 +4,19 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import com.example.newsapp.data.local.news.article.CachedArticleEntity
+import com.example.newsapp.data.local.news.article.CachedNewsDao
 import kotlin.jvm.java
 
+
 @Database(
-    entities = [FavoriteArticleEntity::class],
-    version = 2,
+    entities = [FavoriteArticleEntity::class, CachedArticleEntity::class],
+    version = 5, // Make sure to bump the version if you already have existing tables
     exportSchema = false
 )
 abstract class NewsAppDatabase : RoomDatabase() {
-
     abstract fun newsDao(): NewsDao
+    abstract fun cachedNewsDao(): CachedNewsDao
 
     companion object {
         @Volatile
@@ -24,8 +27,9 @@ abstract class NewsAppDatabase : RoomDatabase() {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     NewsAppDatabase::class.java,
-                    "news_db"
-                ).fallbackToDestructiveMigration().build()
+                    "news_database"
+                ).fallbackToDestructiveMigration()
+                    .build()
                 INSTANCE = instance
                 instance
             }

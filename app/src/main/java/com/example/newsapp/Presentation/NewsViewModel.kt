@@ -1,21 +1,25 @@
-package com.example.newsapp
+package com.example.newsapp.Presentation
 
 import android.app.Application
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.newsapp.data.local.news.FavoriteArticleEntity
 import com.example.newsapp.data.local.news.NewsAppDatabase
+import com.example.newsapp.data.local.news.article.CachedArticleEntity
 import com.example.newsapp.data.remote.Article
 import com.example.newsapp.data.remote.NewsApiService
+import com.example.newsapp.data.remote.Source
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.io.IOException
 
 /**
 class NewsViewModel : ViewModel() {
@@ -73,7 +77,6 @@ isLoading.value = false
 }
  **/
 
-
 class NewsViewModel(application: Application) : AndroidViewModel(application) {
 
     private val apiKey = "344e477ac241420db1e7501341b3ff48"
@@ -85,12 +88,13 @@ class NewsViewModel(application: Application) : AndroidViewModel(application) {
 
     private val api = retrofit.create(NewsApiService::class.java)
 
-    private val dao = NewsAppDatabase.getDatabase(application).newsDao()
+    private val database = NewsAppDatabase.Companion.getDatabase(application)
+    private val dao = database.newsDao()
+    private val cachedDao = database.cachedNewsDao()
 
-    // Observe the favorites from the database using Flow.
     val favoriteArticles = dao.getAllFavorites().stateIn(
         viewModelScope,
-        SharingStarted.WhileSubscribed(),
+        SharingStarted.Companion.WhileSubscribed(),
         emptyList()
     )
 
@@ -103,47 +107,77 @@ class NewsViewModel(application: Application) : AndroidViewModel(application) {
     var isLoading = mutableStateOf(false)
     var errorMessage = mutableStateOf<String?>(null)
 
-    // Track the in-memory list of favorites for quick access
     private val _favorites = mutableStateListOf<Article>()
     val favorites: List<Article> get() = _favorites
 
-    // Toggle the favorite status of an article, and update the UI accordingly
+
+//    var isOffline = mutableStateOf(false)
+//        private set
+
+
     fun toggleFavorite(article: Article) {
         viewModelScope.launch {
             val isFav = dao.getAllFavorites().first().any { it.url == article.url }
-
-            // If it's already a favorite, remove it; otherwise, add it to favorites
             if (isFav) {
                 dao.removeFromFavorites(article.toEntity())
-                _favorites.remove(article) // Update in-memory list
+                _favorites.remove(article)
             } else {
                 dao.addToFavorites(article.toEntity())
-                _favorites.add(article) // Update in-memory list
+                _favorites.add(article)
             }
         }
     }
 
-    // Check if the article is a favorite
     fun isFavorite(article: Article): Boolean {
         return _favorites.contains(article) || favoriteArticles.value.any { it.url == article.url }
     }
 
-    // Fetch the latest news
+    val cachedArticles = cachedDao.getAllCachedArticles()
+        .map { list -> list.map { it.toArticle() } }
+        .stateIn(viewModelScope, SharingStarted.Companion.WhileSubscribed(), emptyList())
+
     fun fetchNews(topic: String = "technology") {
         viewModelScope.launch {
             isLoading.value = true
             errorMessage.value = null
+//            isOffline.value = false // Initially
+
 
             try {
                 val topicResponse = api.getTopicNews(topic, apiKey)
                 val breakingResponse = api.getBreakingNews(apiKey = apiKey)
 
                 if (topicResponse.isSuccessful && breakingResponse.isSuccessful) {
-                    topicNews.value = topicResponse.body()?.articles ?: emptyList()
-                    breakingNews.value = breakingResponse.body()?.articles ?: emptyList()
+                    val topicArticles = topicResponse.body()?.articles ?: emptyList()
+                    val breakingArticles = breakingResponse.body()?.articles ?: emptyList()
+
+                    topicNews.value = topicArticles
+                    breakingNews.value = breakingArticles
+
+                    // Cache both topic and breaking news
+                    cachedDao.clearAll()
+                    val cachedTopic = topicArticles.map { it.toCachedEntity("topic") }
+                    val cachedBreaking = breakingArticles.map { it.toCachedEntity("breaking") }
+                    cachedDao.insertAll(cachedTopic + cachedBreaking)
+
                 } else {
-                    errorMessage.value = "Failed to fetch news: ${topicResponse.message()}"
+                    throw Exception("Server error: ${topicResponse.message()}")
                 }
+
+            } catch (e: IOException) {
+//                isOffline.value = true
+                // Offline - show cached topic & breaking news
+                val cachedTopic =
+                    cachedDao.getArticlesByType("topic").firstOrNull()?.map { it.toArticle() }
+                        ?: emptyList()
+                val cachedBreaking =
+                    cachedDao.getArticlesByType("breaking").firstOrNull()?.map { it.toArticle() }
+                        ?: emptyList()
+
+                topicNews.value = cachedTopic
+                breakingNews.value = cachedBreaking
+
+                errorMessage.value = null // optional: silent fallback
             } catch (e: Exception) {
                 errorMessage.value = "Error: ${e.localizedMessage}"
             } finally {
@@ -152,7 +186,6 @@ class NewsViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    // Convert Article to FavoriteArticleEntity
     private fun Article.toEntity(): FavoriteArticleEntity {
         return FavoriteArticleEntity(
             title = this.title,
@@ -161,6 +194,32 @@ class NewsViewModel(application: Application) : AndroidViewModel(application) {
             urlToImage = this.urlToImage,
             publishedAt = this.publishedAt,
             sourceName = this.source.name
+        )
+    }
+
+    private fun Article.toCachedEntity(type: String): CachedArticleEntity {
+        return CachedArticleEntity(
+            url = url,
+            title = title,
+            description = description,
+            urlToImage = urlToImage,
+            publishedAt = publishedAt,
+            sourceName = source.name,
+            type = type
+        )
+    }
+
+
+    private fun CachedArticleEntity.toArticle(): Article {
+        return Article(
+            source = Source(id = null, name = this.sourceName.toString()),
+            author = null,
+            title = this.title,
+            description = this.description.toString(),
+            url = this.url,
+            urlToImage = this.urlToImage,
+            publishedAt = this.publishedAt,
+            content = ""
         )
     }
 }
