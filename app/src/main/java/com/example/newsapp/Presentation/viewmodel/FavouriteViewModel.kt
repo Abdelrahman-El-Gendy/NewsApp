@@ -1,8 +1,8 @@
-package com.example.newsapp.data.local.news
-
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.newsapp.data.local.news.FavoriteArticleEntity
+import com.example.newsapp.data.local.news.NewsAppDatabase
 import com.example.newsapp.data.remote.Article
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
@@ -10,11 +10,11 @@ import kotlinx.coroutines.launch
 
 class FavouriteViewModel(application: Application) : AndroidViewModel(application = application) {
 
-    private val dao = NewsAppDatabase.getDatabase(application).newsDao()
+    private val dao = NewsAppDatabase.Companion.getDatabase(application).newsDao()
 
     val favoriteArticles = dao.getAllFavorites().stateIn(
         viewModelScope,
-        SharingStarted.WhileSubscribed(),
+        SharingStarted.Companion.WhileSubscribed(),
         emptyList()
     )
 
