@@ -30,7 +30,7 @@ A modern Android News App built using **Kotlin**, **Jetpack Compose**, and **Cle
 - **Error Handling** – Detects no internet and silently falls back to cache.
 
 ### 💡 Dependency Injection *(optional for future scalability)*
-- **Hilt*** – Easily inject dependencies into your components.
+- ⛔**Hilt*** – Easily inject dependencies into your components.
 
 ---
 
@@ -49,7 +49,5 @@ com.example.newsapp </br>
 │   ├── viewmodel </br>
 │   └── screens </br>
 ## 📱 Demo
-
-![App Demo](assets/demo.gif)
 ![Image](https://github.com/user-attachments/assets/1e17fab4-ccad-4a1d-bfba-3b5e0ab68676)
 
